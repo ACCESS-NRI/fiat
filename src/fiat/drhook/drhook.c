@@ -3552,7 +3552,7 @@ c_drhook_start_(const char *name,
     {
       const int ftnunitno = 0; /* stderr */
       const int print_option = 2; /* calling tree */
-      int level = 0;
+      int level = 99;
       c_drhook_print_(&ftnunitno, thread_id, &print_option, &level);
       /* fprintf(stderr,"%d#%d> %*.*s [%llu]\n",myproc,*thread_id,name_len,name_len,name,u.ull); */
     }
@@ -3996,17 +3996,17 @@ c_drhook_print_(const int *ftnunitno,
              ) { /* the current calling tree */
       drhook_calltree_t *treeptr = calltree[tid-1];
 
-      if (*print_option == 2) { 
-        long long int hwm = getmaxhwm_()/1048576;
-        long long int rss = getmaxrss_()/1048576;
-        long long int maxstack = getmaxstk_()/1048576;
-        long long int vmpeak = getvmpeak_()/1048576;
-        snprintf(line,sizeof(line),
-                 "%s %s [DrHookCallTree] DR_HOOK call tree : %lld MB (maxheap), %lld MB (maxrss), %lld MB (maxstack), %lld MB (vmpeak)",
-                 pfx,TIMESTR(tid),
-                 hwm,rss,maxstack,vmpeak);
-        DrHookPrint(*ftnunitno, line);
-      }
+      // if (*print_option == 2) {
+      //   long long int hwm = getmaxhwm_()/1048576;
+      //   long long int rss = getmaxrss_()/1048576;
+      //   long long int maxstack = getmaxstk_()/1048576;
+      //   long long int vmpeak = getvmpeak_()/1048576;
+      //   snprintf(line,sizeof(line),
+      //            "%s %s [DrHookCallTree] DR_HOOK call tree : %lld MB (maxheap), %lld MB (maxrss), %lld MB (maxstack), %lld MB (vmpeak)",
+      //            pfx,TIMESTR(tid),
+      //            hwm,rss,maxstack,vmpeak);
+      //   DrHookPrint(*ftnunitno, line);
+      // }
 
       if (tid > 1) {
         if (*print_option == 2) {
@@ -4052,8 +4052,7 @@ c_drhook_print_(const int *ftnunitno,
           }
           if (*print_option == 2 || 
               (is_timeline && tid > 1 && tid <= opt_timeline_thread))  {
-            sprintf(s,"%s %s [DrHookCallTree] %s%c ",
-                    pfx,TIMESTR(tid),
+            sprintf(s,"[CallTree] %s%c ",
                     is_timeline ? "tl:" : "",
                     kind);
           }
@@ -4065,7 +4064,10 @@ c_drhook_print_(const int *ftnunitno,
           }
           s += strlen(s);
           (*level)++;
-          for (j=0; j<(*level); j++) *s++ = ' ';
+          for (j=0; j<(*level); j++) {
+            *s++ = ' ';
+            *s++ = ' ';
+          }
           if (*print_option == 2) {
             if(mytid != tid) { /* We are printing the master call tree as far as >OMP*/
               if(strncmp(">OMP",keyptr->name,4) == 0) {
@@ -4135,11 +4137,13 @@ c_drhook_print_(const int *ftnunitno,
             PRINT_CPU();
           }
           *s = 0;
-          DrHookPrint(*ftnunitno, line);
+          // Move outside the loop so only get the final routine
+          // DrHookPrint(*ftnunitno, line);
         }
         if (abs_print_option == 7 || abs_print_option == 5 || abs_print_option == 6) break;
         if (treeptr) treeptr = treeptr->next;
       } /* while (abs_print_option == 7 || (treeptr && treeptr->active)) */
+      DrHookPrint(*ftnunitno, line);
     }
 
     else if (*print_option == 3) { /* profiling (CPU or wall-clock) */
